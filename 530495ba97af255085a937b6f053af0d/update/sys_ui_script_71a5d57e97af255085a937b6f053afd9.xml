@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_script">
+    <sys_ui_script action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <description/>
+        <global>true</global>
+        <ignore_in_now_experience>false</ignore_in_now_experience>
+        <name>find_script_column</name>
+        <script><![CDATA[document.addEventListener("onload", runScriptSuggestor());
+// window.setTimeout(runScriptSuggestor, 2000);
+
+function runScriptSuggestor() {
+    var url = document.location.href;
+    var tableName = url.split("?")[0].replace("https://", "").split("/")[1].replace(".do", "");
+    if (tableName.indexOf("_list") > -1) {
+        return;
+    }
+    var gAjax = new GlideAjax("global.StarCoderClientHelper");
+    gAjax.addParam("sysparm_name", "getFieldName");
+    gAjax.addParam("sysparm_tablename", tableName);
+    gAjax.getXMLAnswer(function(response) {
+		console.log("ajax response -> "  + response);
+        if (response)
+            attachOnChangeEvent(response, tableName);
+    });
+
+}
+// run something	
+function attachOnChangeEvent(columnName, tableName) {
+    var fieldHTMLObj = document.getElementById(tableName + "." + columnName);
+    if (fieldHTMLObj != null) {
+        var scriptEditors = monaco.editor.getModels();
+		console.log("[CLIENT] script editors ----------------------------->");
+		console.log(scriptEditors);
+		console.log("<----------------------------- [CLIENT] script editors");
+        for (var i = 0; i < scriptEditors.length; i++) {
+            var tempEditor = scriptEditors[i];
+            scriptEditors[i].onDidChangeContent(function(e) {
+                if (e.changes) { 	
+					// console.log(e);
+                    var eolChar = e.eol;
+                    if (eolChar == '\n') {
+						// console.log("[CLIENT] eolChar -> " + eolChar);
+                        var lineNum = e.changes[0].range.endLineNumber;
+						var lineLastChar = e.changes[0].text;
+                        var lineContent = tempEditor.getLineContent(lineNum);
+                        if (lineContent.trim().startsWith("//") && lineLastChar == "\t") {
+							console.log("******COMMAND TO BOT EXECUTED******")
+                            var gAjax = new GlideAjax("global.StarCoderClientHelper");
+                            gAjax.addParam("sysparm_name", "clientSideBotResponse");
+                            gAjax.addParam("sysparm_prompt", lineContent);
+                            gAjax.getXMLAnswer(function(response) {
+                                if (response) {
+                                    var textToReplace = "/*\nBot Response:*/" + lineContent + "\n" + response;
+                                    tempEditor.pushEditOperations([], [{
+                                        forceMoveMarkers: true,
+                                        text: textToReplace,
+                                        range: {
+                                            startColumn: 1,
+                                            endColumn: lineContent.length,
+                                            startLineNumber: lineNum,
+                                            endLineNumber: lineNum
+                                        }
+                                    }]);
+                                }
+                            });
+
+                        }
+                    }
+                }
+            });
+        }
+    }
+}]]></script>
+        <script_name/>
+        <sys_class_name>sys_ui_script</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2023-06-24 07:03:20</sys_created_on>
+        <sys_id>71a5d57e97af255085a937b6f053afd9</sys_id>
+        <sys_mod_count>79</sys_mod_count>
+        <sys_name>find_script_column</sys_name>
+        <sys_package display_value="SNScriptCompleter" source="530495ba97af255085a937b6f053af0d">530495ba97af255085a937b6f053af0d</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="SNScriptCompleter">530495ba97af255085a937b6f053af0d</sys_scope>
+        <sys_update_name>sys_ui_script_71a5d57e97af255085a937b6f053afd9</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2023-07-02 11:05:29</sys_updated_on>
+        <ui_type>0</ui_type>
+        <use_scoped_format>false</use_scoped_format>
+    </sys_ui_script>
+</record_update>
